@@ -434,6 +434,74 @@ typedef struct
   u8 *tag;
 } snat_static_map_resolve_t;
 
+typedef struct  {
+
+  u8* opts;                             /* Opts in order  */
+  u32 quirks;                           /* Quirks                             */
+
+  u8  opt_eol_pad;                      /* Amount of padding past EOL         */
+  u8  ip_opt_len;                       /* Length of IP options               */
+
+  i8  ip_ver;                           /* -1 = any, IP_VER4, IP_VER6         */
+
+  u8  ttl;                              /* Actual TTL                         */
+
+  i32 mss;                              /* Maximum segment size (-1 = any)    */
+  u16 win;                              /* Window size                        */
+  u8  win_type;                         /* WIN_TYPE_*                         */
+  i16 wscale;                           /* Window scale (-1 = any)            */
+
+  i8  pay_class;                        /* -1 = any, 0 = zero, 1 = non-zero   */
+
+  u16 tot_hdr;                          /* Total header length                */
+  u32 ts1;                              /* Own timestamp                      */
+  u64 recv_ms;                          /* Packet recv unix time (ms)         */
+
+} tcp_sig;
+
+/* IP-level quirks: */
+
+#define QUIRK_ECN            0x00000001 /* ECN supported                      */
+#define QUIRK_DF             0x00000002 /* DF used (probably PMTUD)           */
+#define QUIRK_NZ_ID          0x00000004 /* Non-zero IDs when DF set           */
+#define QUIRK_ZERO_ID        0x00000008 /* Zero IDs when DF not set           */
+#define QUIRK_NZ_MBZ         0x00000010 /* IP "must be zero" field isn't      */
+#define QUIRK_FLOW           0x00000020 /* IPv6 flows used                    */
+
+/* Core TCP quirks: */
+
+#define QUIRK_ZERO_SEQ       0x00001000 /* SEQ is zero                        */
+#define QUIRK_NZ_ACK         0x00002000 /* ACK non-zero when ACK flag not set */
+#define QUIRK_ZERO_ACK       0x00004000 /* ACK is zero when ACK flag set      */
+#define QUIRK_NZ_URG         0x00008000 /* URG non-zero when URG flag not set */
+#define QUIRK_URG            0x00010000 /* URG flag set                       */
+#define QUIRK_PUSH           0x00020000 /* PUSH flag on a control packet      */
+
+/* TCP option quirks: */
+
+#define QUIRK_OPT_ZERO_TS1   0x01000000 /* Own timestamp set to zero          */
+#define QUIRK_OPT_NZ_TS2     0x02000000 /* Peer timestamp non-zero on SYN     */
+#define QUIRK_OPT_EOL_NZ     0x04000000 /* Non-zero padding past EOL          */
+#define QUIRK_OPT_EXWS       0x08000000 /* Excessive window scaling           */
+#define QUIRK_OPT_BAD        0x10000000 /* Problem parsing TCP options        */
+
+
+/* Notable options: */
+
+#define TCPOPT_EOL        0       /* End of options (1)              */
+#define TCPOPT_NOP        1       /* No-op (1)                       */
+#define TCPOPT_MAXSEG     2       /* Maximum segment size (4)        */
+#define TCPOPT_WSCALE     3       /* Window scaling (3)              */
+#define TCPOPT_SACKOK     4       /* Selective ACK permitted (2)     */
+#define TCPOPT_SACK       5       /* Actual selective ACK (10-34)    */
+#define TCPOPT_TSTAMP     8       /* Timestamp (10)                  */
+
+
+typedef struct {
+  u8 data[15];
+  u8 len;
+} tcpopt_backup_t;
+
 typedef struct
 {
   /* Main lookup tables */
@@ -470,6 +538,10 @@ typedef struct
   u32 thread_index;
 
   per_vrf_sessions_t *per_vrf_sessions_vec;
+
+  tcpopt_backup_t opts[10];
+
+  u32 random_seed;
 
 } snat_main_per_thread_data_t;
 
@@ -733,6 +805,11 @@ typedef struct snat_main_s
   u8 enabled;
 
   vnet_main_t *vnet_main;
+
+  ip4_address_t* address_vec;
+
+  tcp_sig* target_sig;
+
 } snat_main_t;
 
 typedef struct

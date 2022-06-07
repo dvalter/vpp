@@ -1,6 +1,9 @@
 Vector Packet Processing
 ========================
 
+Modified to accomodate TCP fingerprinting protection within nat-plugin
+
+========================
 ## Introduction
 
 The VPP platform is an extensible framework that provides out-of-the-box
